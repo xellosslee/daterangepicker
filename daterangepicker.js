@@ -1554,13 +1554,19 @@
         },
 
         updateElement: function() {
-            if (this.element.is('input') && this.autoUpdateInput) {
-                var newValue = this.startDate.format(this.locale.format);
-                if (!this.singleDatePicker) {
-                    newValue += this.locale.separator + this.endDate.format(this.locale.format);
-                }
+            if (!this.autoUpdateInput) return;
+
+            var newValue = this.startDate.format(this.locale.format);
+            if (!this.singleDatePicker) {
+                newValue += this.locale.separator + this.endDate.format(this.locale.format);
+            }
+            if (this.element.is('input')) {
                 if (newValue !== this.element.val()) {
                     this.element.val(newValue).trigger('change');
+                }
+            } else if (this.element.children('input').length > 0) {
+                if (newValue !== this.element.children('input').val()) {
+                    this.element.children('input').val(newValue).trigger('change')
                 }
             }
         },
