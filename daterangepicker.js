@@ -707,7 +707,7 @@
                 html += '<th></th>';
 
             if ((!minDate || minDate.isBefore(calendar.firstDay)) && (!this.linkedCalendars || side == 'left')) {
-                html += '<th class="prev available"><span></span></th>';
+                html += '<th class="prev available"><em class="ic16 ic-prev-blue"></th>';
             } else {
                 html += '<th></th>';
             }
@@ -752,7 +752,7 @@
 
             html += '<th colspan="5" class="month">' + dateHtml + '</th>';
             if ((!maxDate || maxDate.isAfter(calendar.lastDay)) && (!this.linkedCalendars || side == 'right' || this.singleDatePicker || this.singleDateRangePicker)) {
-                html += '<th class="next available"><span></span></th>';
+                html += '<th class="next available"><em class="ic16 ic-next-blue"></th>';
             } else {
                 html += '<th></th>';
             }
