@@ -431,7 +431,9 @@
         this.container.find('.applyBtn').html(this.locale.applyLabel);
         this.container.find('.appendBtn').html(this.locale.appendLabel);
         this.container.find('.cancelBtn').html(this.locale.cancelLabel);
-
+        if (!this.saveArray)
+            this.container.find('.appendBtn').hide();
+            
         //
         // event listeners
         //
@@ -451,6 +453,7 @@
         this.container.find('.drp-buttons')
             .on('click.daterangepicker', 'button.applyBtn', $.proxy(this.clickApply, this))
             .on('click.daterangepicker', 'button.appendBtn', $.proxy(this.clickAppend, this))
+            .on('click.daterangepicker', 'span.array-remove', $.proxy(this.clickRemove, this))
             .on('click.daterangepicker', 'button.cancelBtn', $.proxy(this.clickCancel, this));
 
         if (this.element.is('input') || this.element.is('button')) {
@@ -1048,8 +1051,10 @@
             if (this.saveArray) {
                 if (this.singleDatePicker || (this.endDate && (this.startDate.isBefore(this.endDate) || this.startDate.isSame(this.endDate)))) {
                     this.container.find('button.appendBtn').prop('disabled', false);
+                    this.container.find('button.applyBtn').prop('disabled', false);
                 } else {
                     this.container.find('button.appendBtn').prop('disabled', true);
+                    this.container.find('button.applyBtn').prop('disabled', true);
                 }
             } else {
                 if (this.singleDatePicker || (this.endDate && (this.startDate.isBefore(this.endDate) || this.startDate.isSame(this.endDate)))) {
@@ -1187,6 +1192,12 @@
 
         hide: function(e) {
             if (!this.isShowing) return;
+
+            // if saveArray mode then first element set
+            if (this.saveArray && this.dateRangeList.length > 0 ) {
+                this.startDate = this.dateRangeList[0].start;
+                this.endDate = this.dateRangeList[0].end;
+            }
 
             //incomplete date selection, revert to last values
             if (!this.endDate) {
@@ -1442,21 +1453,46 @@
         },
 
         clickAppend: function(e) {
+            var obj = this;
+            var idx = this.dateRangeList.filter(function(v) {
+                return (v.start.isSame(obj.startDate) || v.start.isSame(obj.endDate) ||
+                    v.end.isSame(obj.startDate) || v.end.isSame(obj.endDate) ||
+                    v.start.isBetween(obj.startDate, obj.endDate) || v.end.isBetween(obj.startDate, obj.endDate));
+            })
+            if (idx.length > 0) {
+                alert('조회 일자가 겹치게 추가 될 수 없습니다.');
+                return;
+            }
+            if (this.dateRangeList.length >= 3) {
+                alert('최대 3건을 초과할 수 없습니다.');
+                return;
+            }
+
             this.dateRangeList.push({start: this.startDate, end: this.endDate});
             var html = this.container.find('.array-list').html();
-            html += '<li>' +
+            html += '<li array-id="' + this.startDate.format(this.locale.format) + '">' +
                 '<span class="array-item">' + this.startDate.format(this.locale.format) + '</span>' +
-                '<span class="seperator">~</span>' +
+                ' ~ ' +
                 '<span class="array-item">' + this.endDate.format(this.locale.format) + '</span>' +
-                '<em class="ic16 ic-cancel-blue"></em>' +
+                '<span class="array-remove"><em class="ic16 ic-cancel-blue"></em></span>' +
             '</li>';
             this.container.find('.array-list').html(html);
+            this.container.find('button.applyBtn').prop('disabled', false);
 
-            this.element.trigger('append.daterangepicker', this);
+            this.element.trigger('array-append.daterangepicker', this);
         },
 
-        clickRemove: function() {
-            
+        clickRemove: function(e) {
+            var obj = this;
+            var idx = this.dateRangeList.findIndex(function(v) { return v.start.format(obj.locale.format) == $(e.currentTarget).parent().attr('array-id')})
+            if (idx >= 0) {
+                this.dateRangeList.splice(idx, 1);
+                $(e.currentTarget).parent().remove();
+            }
+            if (this.dateRangeList.length == 0) {
+                this.container.find('button.applyBtn').prop('disabled', true);
+            }
+            this.element.trigger('array-remove.daterangepicker', this);
         },
 
         clickCancel: function(e) {
@@ -1612,7 +1648,21 @@
                 }
             } else if (this.element.children('input').length > 0) {
                 if (newValue !== this.element.children('input').val()) {
-                    this.element.children('input').val(newValue).trigger('change')
+                    this.element.children('input').val(newValue).trigger('change');
+                }
+            }
+
+            if (this.dateRangeList.length > 0) {
+                var res = '';
+                this.dateRangeList.forEach(e => {
+                    if (res != '')
+                        res += '\n';
+                    res += e.start.format(this.locale.format) + this.locale.separator + e.end.format(this.locale.format);
+                })
+                if (this.element.is('input')) {
+                    this.element.attr('title', res);
+                } else if (this.element.children('input').length > 0) {
+                    this.element.children('input').attr('title', res);
                 }
             }
         },
